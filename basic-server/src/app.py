@@ -4,7 +4,7 @@ import sys
 import os
 from flask import Flask, request, redirect, url_for, session
 import psycopg2
-from config import ITEMS as cryto_list
+from .config import ITEMS as cryto_list
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
@@ -167,5 +167,5 @@ def logout():
     session.pop('username', None)
     return redirect(url_for("login"))
 
-if __name__ == "__main__":
-    app.run(debug=True)
+# if __name__ == "__main__":
+#     app.run(debug=True)
