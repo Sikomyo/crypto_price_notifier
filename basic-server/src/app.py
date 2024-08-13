@@ -21,7 +21,7 @@ app.config['SESSION_TYPE'] = 'filesystem'
 DB_NAME = 'project_db'
 DB_USER = 'postgres'
 DB_PASS = 'pass12345'
-DB_HOST = '	rekt38.stackhero-network.com'
+DB_HOST = 'https://rekt38.stackhero-network.com/browser/'
 DB_PORT = '8131'
 
 data_manage_obj = DataManagement(db_name=DB_NAME, db_user=DB_USER, db_pass=DB_PASS, db_host=DB_HOST, db_port=DB_PORT)
