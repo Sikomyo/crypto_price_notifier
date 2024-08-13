@@ -5,9 +5,16 @@ from urllib.parse import urlparse
 class DataManagement:
 
     def __init__(self):
-        self.db_url = os.getenv('DATABASE_URL')  # Fetch the DATABASE_URL from environment variables
-        if not self.db_url:
-            raise ValueError("No DATABASE_URL found in environment variables")
+        self.host = os.getenv('STACKHERO_POSTGRESQL_HOST')
+        self.port = os.getenv('STACKHERO_POSTGRESQL_PORT')
+        self.admin_password = os.getenv('STACKHERO_POSTGRESQL_ADMIN_PASSWORD')
+        self.database = "admin"  # or any other database name you are using
+        self.user = "admin"  # or the username you are using
+        
+        if not self.host or not self.port or not self.admin_password:
+            raise ValueError("One or more of the required environment variables are missing")
+
+        self.db_url = f"postgresql://{self.user}:{self.admin_password}@{self.host}:{self.port}/{self.database}"
 
     def get_db_connection(self):
         result = urlparse(self.db_url)
@@ -22,7 +29,8 @@ class DataManagement:
             user=username,
             password=password,
             host=hostname,
-            port=port
+            port=port,
+            sslmode='require'  # Ensure SSL mode is set if required by the database
         )
         return conn
 
