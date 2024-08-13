@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 class DataManagement:
 
     def __init__(self):
-        self.db_url = os.getenv('rekt38.stackhero-network.com')
+        self.db_url = os.getenv('postgres://admin:<HkUhH6xYXdiro0kkrRzfDGYNc7CN1TXT>@rekt38.stackhero-network.com:8131/admin?sslmode=require')
         if not self.db_url:
             raise ValueError("No DATABASE_URL found in environment variables")
 
