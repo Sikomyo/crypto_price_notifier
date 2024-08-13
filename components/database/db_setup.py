@@ -1,15 +1,19 @@
 import os
 import psycopg2
 from urllib.parse import urlparse
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if it exists
+load_dotenv()
 
 class DataManagement:
 
     def __init__(self):
-        self.host = os.getenv('STACKHERO_POSTGRESQL_HOST')
-        self.port = os.getenv('STACKHERO_POSTGRESQL_PORT')
-        self.admin_password = os.getenv('STACKHERO_POSTGRESQL_ADMIN_PASSWORD')
-        self.database = "admin"  # or any other database name you are using
-        self.user = "admin"  # or the username you are using
+        self.host = os.getenv('STACKHERO_POSTGRESQL_HOST', 'localhost')
+        self.port = os.getenv('STACKHERO_POSTGRESQL_PORT', '5432')
+        self.admin_password = os.getenv('STACKHERO_POSTGRESQL_ADMIN_PASSWORD', 'pass12345')
+        self.database = os.getenv('DATABASE_NAME', 'project_db')
+        self.user = os.getenv('DATABASE_USER', 'postgres')
         
         if not self.host or not self.port or not self.admin_password:
             raise ValueError("One or more of the required environment variables are missing")
@@ -24,13 +28,15 @@ class DataManagement:
         hostname = result.hostname
         port = result.port
 
+        sslmode = 'require' if hostname != 'localhost' else 'disable'
+
         conn = psycopg2.connect(
             dbname=database,
             user=username,
             password=password,
             host=hostname,
             port=port,
-            sslmode='require'  # Ensure SSL mode is set if required by the database
+            sslmode=sslmode  # Adjust SSL mode based on the hostname
         )
         return conn
 
