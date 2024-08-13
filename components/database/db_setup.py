@@ -48,7 +48,7 @@ class DataManagement:
         conn.close()
 
 
-    def get_local_db_connection(self):
+    def get_db_connection(self):
         conn = psycopg2.connect(
             dbname=self.DB_NAME,
             user=self.DB_USER,
@@ -58,23 +58,23 @@ class DataManagement:
         )
         return conn
     
-    def get_db_connection():
-        db_url = os.getenv('DATABASE_URL')
-        result = urlparse(db_url)
-        username = result.username
-        password = result.password
-        database = result.path[1:]
-        hostname = result.hostname
-        port = result.port
+    # def get_db_connection():
+    #     db_url = os.getenv('DATABASE_URL')
+    #     result = urlparse(db_url)
+    #     username = result.username
+    #     password = result.password
+    #     database = result.path[1:]
+    #     hostname = result.hostname
+    #     port = result.port
 
-        conn = psycopg2.connect(
-            dbname=database,
-            user=username,
-            password=password,
-            host=hostname,
-            port=port
-        )
-        return conn
+    #     conn = psycopg2.connect(
+    #         dbname=database,
+    #         user=username,
+    #         password=password,
+    #         host=hostname,
+    #         port=port
+    #     )
+    #     return conn
     
 
     def setup_database(self):
