@@ -15,12 +15,17 @@ from urllib.parse import urlparse
 
 class DataManagement:
 
-    def __init__(self, db_name, db_user, db_pass, db_host, db_port):
-        self.DB_NAME = db_name
-        self.DB_USER = db_user
-        self.DB_PASS = db_pass
-        self.DB_HOST = db_host
-        self.DB_PORT = db_port
+    # def __init__(self, db_name, db_user, db_pass, db_host, db_port):
+    #     self.DB_NAME = db_name
+    #     self.DB_USER = db_user
+    #     self.DB_PASS = db_pass
+    #     self.DB_HOST = db_host
+    #     self.DB_PORT = db_port
+
+    def __init__(self):
+        self.db_url = os.getenv('DATABASE_URL')
+        if not self.db_url:
+            raise ValueError("No DATABASE_URL found in environment variables")
 
 
     def create_database_if_not_exists(self):
@@ -48,33 +53,33 @@ class DataManagement:
         conn.close()
 
 
-    def get_db_connection(self):
-        conn = psycopg2.connect(
-            dbname=self.DB_NAME,
-            user=self.DB_USER,
-            password=self.DB_PASS,
-            host=self.DB_HOST,
-            port=self.DB_PORT
-        )
-        return conn
-    
-    # def get_db_connection():
-    #     db_url = os.getenv('DATABASE_URL')
-    #     result = urlparse(db_url)
-    #     username = result.username
-    #     password = result.password
-    #     database = result.path[1:]
-    #     hostname = result.hostname
-    #     port = result.port
-
+    # def get_db_connection(self):
     #     conn = psycopg2.connect(
-    #         dbname=database,
-    #         user=username,
-    #         password=password,
-    #         host=hostname,
-    #         port=port
+    #         dbname=self.DB_NAME,
+    #         user=self.DB_USER,
+    #         password=self.DB_PASS,
+    #         host=self.DB_HOST,
+    #         port=self.DB_PORT
     #     )
     #     return conn
+    
+    def get_db_connection():
+        db_url = os.getenv('DATABASE_URL')
+        result = urlparse(db_url)
+        username = result.username
+        password = result.password
+        database = result.path[1:]
+        hostname = result.hostname
+        port = result.port
+
+        conn = psycopg2.connect(
+            dbname=database,
+            user=username,
+            password=password,
+            host=hostname,
+            port=port
+        )
+        return conn
     
 
     def setup_database(self):

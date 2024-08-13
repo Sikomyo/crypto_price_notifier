@@ -7,9 +7,7 @@ import psycopg2
 from .config import ITEMS as cryto_list
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
-
 from components.database.db_setup import DataManagement
-
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -17,17 +15,8 @@ app.secret_key = 'your_secret_key'
 # Configure session to use filesystem (instead of signed cookies)
 app.config['SESSION_TYPE'] = 'filesystem'
 
-# Database connection details
-DB_NAME = 'project_db'
-DB_USER = 'postgres'
-DB_PASS = 'pass12345'
-DB_HOST = 'https://rekt38.stackhero-network.com'
-DB_PORT = '8131'
-
-data_manage_obj = DataManagement(db_name=DB_NAME, db_user=DB_USER, db_pass=DB_PASS, db_host=DB_HOST, db_port=DB_PORT)
-data_manage_obj.create_database_if_not_exists()
+data_manage_obj = DataManagement()
 data_manage_obj.setup_database()
-
 
 @app.route("/")
 def main():
