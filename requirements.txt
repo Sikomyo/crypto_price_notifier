@@ -33,7 +33,6 @@ pytz==2024.1
 requests==2.32.3
 seaborn==0.11.2
 six==1.16.0
-statsmodels==0.13.2
 threadpoolctl==3.5.0
 traitlets==5.14.3
 tzlocal==5.2
