@@ -2,6 +2,8 @@ import os
 import psycopg2
 from urllib.parse import urlparse
 from dotenv import load_dotenv
+import json
+import pika
 
 # Load environment variables from .env file if it exists
 load_dotenv()
@@ -19,6 +21,7 @@ class DataManagement:
             raise ValueError("One or more of the required environment variables are missing")
 
         self.db_url = f"postgresql://{self.user}:{self.admin_password}@{self.host}:{self.port}/{self.database}"
+
 
     def get_db_connection(self):
         result = urlparse(self.db_url)
@@ -40,9 +43,10 @@ class DataManagement:
         )
         return conn
 
+
     def create_database_if_not_exists(self):
-        # Normally you do not need to create a database in Heroku, as it is managed.
         pass
+
 
     def setup_database(self):
         conn = self.get_db_connection()
@@ -53,13 +57,17 @@ class DataManagement:
             id SERIAL PRIMARY KEY,
             symbol VARCHAR(10) NOT NULL,
             price DECIMAL(10, 2) NOT NULL,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            username VARCHAR(50) NOT NULL
         );
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
             username VARCHAR(50) UNIQUE NOT NULL,
             password VARCHAR(50) NOT NULL,
-            email VARCHAR(255)
+            email VARCHAR(255),
+            minutely BOOLEAN,
+            hourly BOOLEAN,
+            daily BOOLEAN
         );
         CREATE TABLE IF NOT EXISTS user_config (
             id SERIAL PRIMARY KEY,
@@ -75,16 +83,33 @@ class DataManagement:
 
         print("Database setup completed.")
 
-    def add_new_price(self, symbol: str, price: float, timestamp):
+
+    def add_new_price(self, symbol: str, price: float, timestamp, username: str):
         conn = self.get_db_connection()
         cur = conn.cursor()
         insert_query_tabel = '''
-        INSERT INTO prices (symbol, price, timestamp)
-        VALUES (%s, %s, %s);
+        INSERT INTO prices (symbol, price, timestamp, username)
+        VALUES (%s, %s, %s, %s);
         '''
-        cur.execute(insert_query_tabel, (symbol, price, timestamp))
-
+        cur.execute(insert_query_tabel, (symbol, price, timestamp, username))
         conn.commit()
         cur.close()
         conn.close()
         print("Successfully Inserted the New Price.")
+
+
+    def consume_from_queue(self):
+        credentials = pika.PlainCredentials(self.rabbitmq_user, self.rabbitmq_pass)
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(host=self.rabbitmq_host, port=self.rabbitmq_port, credentials=credentials)
+        )
+        channel = connection.channel()
+        channel.queue_declare(queue=self.rabbitmq_queue)
+        
+        def callback(ch, method, properties, body):
+            message = json.loads(body)
+            self.add_new_price(message['symbol'], message['price'], message['timestamp'])
+
+        channel.basic_consume(queue=self.rabbitmq_queue, on_message_callback=callback, auto_ack=True)
+        print('Waiting for messages. To exit press CTRL+C')
+        channel.start_consuming()
