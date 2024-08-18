@@ -2,6 +2,7 @@
 import requests
 import json
 import os
+import ssl
 import pika
 from components.database.db_setup import DataManagement
 from datetime import datetime
@@ -87,7 +88,8 @@ class CryptoDataCollector:
 
 
     def start_price_update_consumer(self, queue_name='price_update'):
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.rabbitmq_host, port=self.rabbitmq_port))
+        ssl_options = pika.SSLOptions(ssl.create_default_context(), self.rabbitmq_host)
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.rabbitmq_host, port=self.rabbitmq_port, ssl_options=ssl_options))
         channel = connection.channel()
 
         # Declare a queue
