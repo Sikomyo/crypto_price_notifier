@@ -11,6 +11,7 @@ load_dotenv()
 class DataManagement:
 
     def __init__(self):
+        # PostgreSQL related initialization
         self.host = os.getenv('STACKHERO_POSTGRESQL_HOST', 'localhost')
         self.port = os.getenv('STACKHERO_POSTGRESQL_PORT', '5432')
         self.admin_password = os.getenv('STACKHERO_POSTGRESQL_ADMIN_PASSWORD', 'pass12345')
@@ -21,6 +22,13 @@ class DataManagement:
             raise ValueError("One or more of the required environment variables are missing")
 
         self.db_url = f"postgresql://{self.user}:{self.admin_password}@{self.host}:{self.port}/{self.database}"
+
+        # RabbitMQ related initialization
+        self.rabbitmq_host = os.getenv('RABBITMQ_HOST', 'localhost')
+        self.rabbitmq_port = int(os.getenv('RABBITMQ_PORT', '5672'))
+        self.rabbitmq_queue = os.getenv('RABBITMQ_QUEUE', 'crypto_prices')
+        self.rabbitmq_user = os.getenv('RABBITMQ_USER', 'guest')
+        self.rabbitmq_pass = os.getenv('RABBITMQ_PASS', 'guest')
 
 
     def get_db_connection(self):
@@ -98,15 +106,14 @@ class DataManagement:
             conn.close()
 
 
-
     def add_new_price(self, symbol: str, price: float, timestamp, username: str):
         conn = self.get_db_connection()
         cur = conn.cursor()
-        insert_query_tabel = '''
+        insert_query_table = '''
         INSERT INTO prices (symbol, price, timestamp, username)
         VALUES (%s, %s, %s, %s);
         '''
-        cur.execute(insert_query_tabel, (symbol, price, timestamp, username))
+        cur.execute(insert_query_table, (symbol, price, timestamp, username))
         conn.commit()
         cur.close()
         conn.close()
@@ -114,17 +121,20 @@ class DataManagement:
 
 
     def consume_from_queue(self):
+        # Setup RabbitMQ connection
         credentials = pika.PlainCredentials(self.rabbitmq_user, self.rabbitmq_pass)
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(host=self.rabbitmq_host, port=self.rabbitmq_port, credentials=credentials)
         )
         channel = connection.channel()
-        channel.queue_declare(queue=self.rabbitmq_queue)
+        channel.queue_declare(queue=self.rabbitmq_queue, durable=True)
         
         def callback(ch, method, properties, body):
             message = json.loads(body)
-            self.add_new_price(message['symbol'], message['price'], message['timestamp'])
+            # Assuming the message contains 'symbol', 'price', 'timestamp', and 'username'
+            self.add_new_price(message['symbol'], message['price'], message['timestamp'], message['username'])
 
+        # Start consuming from the queue
         channel.basic_consume(queue=self.rabbitmq_queue, on_message_callback=callback, auto_ack=True)
         print('Waiting for messages. To exit press CTRL+C')
         channel.start_consuming()

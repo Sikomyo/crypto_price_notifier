@@ -3,10 +3,11 @@ import requests
 import json
 import os
 import pika
+from components.database.db_setup import DataManagement
+from datetime import datetime
 
 
 class CryptoDataCollector:
-
 
     def __init__(self):
         self.rabbitmq_host = os.getenv('RABBITMQ_HOST', 'localhost')
@@ -23,7 +24,7 @@ class CryptoDataCollector:
         }
         headers = {
             'Accepts': 'application/json',
-            'X-CMC_PRO_API_KEY': '3b3e4dcc-660a-410c-8f92-8cc888391327',
+            'X-CMC_PRO_API_KEY': '3b3e4dcc-660a-410c-8f92-8cc888391327',  # replace with your actual API key
         }
 
         try:
@@ -42,7 +43,6 @@ class CryptoDataCollector:
             return None, None
 
 
-
     def send_to_queue(self, message):
         credentials = pika.PlainCredentials(self.rabbitmq_user, self.rabbitmq_pass)
         connection = pika.BlockingConnection(
@@ -52,10 +52,62 @@ class CryptoDataCollector:
         channel.queue_declare(queue=self.rabbitmq_queue)
         channel.basic_publish(exchange='', routing_key=self.rabbitmq_queue, body=json.dumps(message))
         connection.close()
-    
+
 
     def collect_and_send(self, symbol: str):
         price, timestamp = self.get_crypto_price(symbol)
         message = {'symbol': symbol, 'price': price, 'timestamp': timestamp}
         self.send_to_queue(message)
 
+
+    def fetch_and_save_price(self, task):
+        username = task['username']
+        symbol = task['symbol']
+
+        data_manage_obj = DataManagement()
+        conn = data_manage_obj.get_db_connection()
+        cur = conn.cursor()
+
+        # Fetch the price for each selected item
+        crypto_price, timestamp = self.get_crypto_price(symbol=symbol)
+        
+        if crypto_price and timestamp:
+            # Save the data to the prices table
+            cur.execute("""
+                INSERT INTO prices (symbol, price, timestamp, username)
+                VALUES (%s, %s, %s, %s)
+            """, (symbol, crypto_price, timestamp, username))
+        else:
+            print(f"Failed to fetch price for {symbol}.")
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        print(f"Fetched and saved price for {symbol} at {datetime.now()}")
+
+
+    def start_price_update_consumer(self, queue_name='price_update'):
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.rabbitmq_host, port=self.rabbitmq_port))
+        channel = connection.channel()
+
+        # Declare a queue
+        channel.queue_declare(queue=queue_name, durable=True)
+
+        def callback(ch, method, properties, body):
+            task = json.loads(body)
+            print(f"Received task: {task}")
+            # Process the task here
+            self.fetch_and_save_price(task)
+
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+
+        # Consume messages
+        channel.basic_consume(queue=queue_name, on_message_callback=callback)
+
+        print(f" [*] Waiting for messages in {queue_name}. To exit press CTRL+C")
+        channel.start_consuming()
+
+
+if __name__ == "__main__":
+    collector = CryptoDataCollector()
+    collector.start_price_update_consumer()

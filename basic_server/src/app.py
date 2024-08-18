@@ -3,6 +3,8 @@
 import sys
 import os
 import atexit
+import json
+import pika
 from flask import Flask, request, redirect, url_for, session, render_template_string
 from threading import Thread
 from .config import ITEMS as cryto_list
@@ -14,7 +16,6 @@ from datetime import datetime
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 from components.database.db_setup import DataManagement
 
-
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
@@ -24,6 +25,13 @@ app.config['SESSION_TYPE'] = 'filesystem'
 data_manage_obj = DataManagement()
 data_manage_obj.setup_database()
 price_analyzer = PriceAnalyzer(data_manage_obj)
+
+# RabbitMQ connection settings
+RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
+RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT', 5672))
+RABBITMQ_QUEUE = os.getenv('RABBITMQ_QUEUE', 'price_update')
+RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'guest')
+RABBITMQ_PASS = os.getenv('RABBITMQ_PASS', 'guest')
 
 
 @app.route("/")
@@ -152,7 +160,6 @@ def config():
     return redirect(url_for("login"))
 
 
-
 @app.route("/save_config", methods=["POST"])
 def save_config():
     if 'username' in session:
@@ -187,7 +194,6 @@ def save_config():
         
         return f"Configuration saved: {', '.join(selected_items)}"
     return redirect(url_for("login"))
-
 
 
 @app.route("/logout", methods=["POST"])
@@ -232,15 +238,30 @@ def check_price():
     return redirect(url_for("login"))
 
 
-def start_consumer():
-    data_manage_obj.consume_from_queue()
+def send_task_to_queue(task, queue_name=RABBITMQ_QUEUE):
+    credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS)
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT, credentials=credentials))
+    channel = connection.channel()
+
+    # Declare a queue
+    channel.queue_declare(queue=queue_name, durable=True)
+
+    # Send a message
+    channel.basic_publish(exchange='',
+                          routing_key=queue_name,
+                          body=json.dumps(task),  # Serialize the task to JSON
+                          properties=pika.BasicProperties(
+                              delivery_mode=2,  # make message persistent
+                          ))
+
+    connection.close()
 
 
 def fetch_and_update_prices():
     print("It is inside fetch and update price")
     conn = data_manage_obj.get_db_connection()
     cur = conn.cursor()
-    crypto_data_collector = CryptoDataCollector()
+
     # Get the list of users with their selected items
     cur.execute("""
         SELECT uc.username, uc.config_item 
@@ -251,22 +272,16 @@ def fetch_and_update_prices():
     user_items = cur.fetchall()
 
     for username, symbol in user_items:
-        # Fetch the price for each selected item
-        crypto_price, timestamp = crypto_data_collector.get_crypto_price(symbol=symbol)
-        
-        if crypto_price and timestamp:
-            # Save the data to the prices table
-            cur.execute("""
-                INSERT INTO prices (symbol, price, timestamp, username)
-                VALUES (%s, %s, %s, %s)
-            """, (symbol, crypto_price, timestamp, username))
-        else:
-            print(f"Failed to fetch price for {symbol}.")
-    
-    conn.commit()
+        # Create a task to be sent to the queue
+        task_data = {
+            "username": username,
+            "symbol": symbol
+        }
+        send_task_to_queue(task_data, queue_name=RABBITMQ_QUEUE)
+
     cur.close()
     conn.close()
-    print(f"Fetched and updated prices at {datetime.now()}")
+    print(f"Sent tasks to queue at {datetime.now()}")
 
 
 def initialize_scheduler():
@@ -299,6 +314,10 @@ def initialize_scheduler():
 
     # Shut down the scheduler when exiting the app
     atexit.register(lambda: scheduler.shutdown())
+
+
+def start_consumer():
+    data_manage_obj.consume_from_queue()
 
 
 if __name__ == "__main__":
