@@ -5,6 +5,7 @@ import os
 import atexit
 import json
 import pika
+import ssl
 from flask import Flask, request, redirect, url_for, session, render_template_string
 from threading import Thread
 from .config import ITEMS as cryto_list
@@ -241,9 +242,10 @@ def check_price():
 
 def send_task_to_queue(task, queue_name=RABBITMQ_QUEUE):
     credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS)
+    ssl_options = pika.SSLOptions(ssl.create_default_context(), rabbitmq_host)
     print(f"RabbitMQ Host: {RABBITMQ_HOST}")
     print(f"RabbitMQ Port: {RABBITMQ_PORT}")
-    print(f"RabbitMQ Port: {RABBITMQ_USER}")
+    print(f"RabbitMQ User: {RABBITMQ_USER}")
     connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT, credentials=credentials))
     channel = connection.channel()
 
