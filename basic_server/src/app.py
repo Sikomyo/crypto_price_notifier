@@ -28,10 +28,12 @@ price_analyzer = PriceAnalyzer(data_manage_obj)
 
 # RabbitMQ connection settings
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
+print(f"RabbitMQ Host: {RABBITMQ_HOST}")
 RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT', 5672))
 RABBITMQ_QUEUE = os.getenv('RABBITMQ_QUEUE', 'price_update')
 RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'guest')
 RABBITMQ_PASS = os.getenv('RABBITMQ_PASS', 'guest')
+
 
 
 @app.route("/")
