@@ -28,7 +28,6 @@ price_analyzer = PriceAnalyzer(data_manage_obj)
 
 # RabbitMQ connection settings
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
-print(f"RabbitMQ Host: {RABBITMQ_HOST}")
 RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT', 5672))
 RABBITMQ_QUEUE = os.getenv('RABBITMQ_QUEUE', 'price_update')
 RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'guest')
@@ -242,6 +241,9 @@ def check_price():
 
 def send_task_to_queue(task, queue_name=RABBITMQ_QUEUE):
     credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS)
+    print(f"RabbitMQ Host: {RABBITMQ_HOST}")
+    print(f"RabbitMQ Port: {RABBITMQ_PORT}")
+    print(f"RabbitMQ Port: {RABBITMQ_USER}")
     connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT, credentials=credentials))
     channel = connection.channel()
 
