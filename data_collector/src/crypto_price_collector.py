@@ -69,22 +69,24 @@ class CryptoDataCollector:
         conn = data_manage_obj.get_db_connection()
         cur = conn.cursor()
 
-        # Fetch the price for each selected item
-        crypto_price, timestamp = self.get_crypto_price(symbol=symbol)
-        
-        if crypto_price and timestamp:
-            # Save the data to the prices table
-            cur.execute("""
-                INSERT INTO prices (symbol, price, timestamp, username)
-                VALUES (%s, %s, %s, %s)
-            """, (symbol, crypto_price, timestamp, username))
-        else:
-            print(f"Failed to fetch price for {symbol}.")
+        try:
+            # Fetch the price for each selected item
+            crypto_price, timestamp = self.get_crypto_price(symbol=symbol)
+            
+            if crypto_price and timestamp:
+                # Save the data to the prices table
+                cur.execute("""
+                    INSERT INTO prices (symbol, price, timestamp, username)
+                    VALUES (%s, %s, %s, %s)
+                """, (symbol, crypto_price, timestamp, username))
+                conn.commit()
+                print(f"Fetched and saved price for {symbol} at {datetime.now()}")
+            else:
+                print(f"Failed to fetch price for {symbol}.")
+        finally:
+            cur.close()
+            conn.close()
 
-        conn.commit()
-        cur.close()
-        conn.close()
-        print(f"Fetched and saved price for {symbol} at {datetime.now()}")
 
 
     def start_price_update_consumer(self, queue_name='price_update'):

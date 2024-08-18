@@ -10,6 +10,7 @@ load_dotenv()
 
 class DataManagement:
 
+
     def __init__(self):
         # PostgreSQL related initialization
         self.host = os.getenv('STACKHERO_POSTGRESQL_HOST', 'localhost')
@@ -50,10 +51,6 @@ class DataManagement:
             sslmode=sslmode  # Adjust SSL mode based on the hostname
         )
         return conn
-
-
-    def create_database_if_not_exists(self):
-        pass
 
 
     def setup_database(self):
