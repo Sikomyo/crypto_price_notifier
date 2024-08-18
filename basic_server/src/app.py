@@ -242,11 +242,12 @@ def check_price():
 
 def send_task_to_queue(task, queue_name=RABBITMQ_QUEUE):
     credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS)
-    ssl_options = pika.SSLOptions(ssl.create_default_context(), rabbitmq_host)
+    ssl_options = pika.SSLOptions(ssl.create_default_context(), RABBITMQ_HOST)
     print(f"RabbitMQ Host: {RABBITMQ_HOST}")
     print(f"RabbitMQ Port: {RABBITMQ_PORT}")
     print(f"RabbitMQ User: {RABBITMQ_USER}")
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT, credentials=credentials))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT,
+                                                                credentials=credentials, ssl_options=ssl_options))
     channel = connection.channel()
 
     # Declare a queue
