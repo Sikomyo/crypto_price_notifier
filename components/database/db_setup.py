@@ -52,36 +52,51 @@ class DataManagement:
         conn = self.get_db_connection()
         cur = conn.cursor()
 
-        create_table_query = '''
-        CREATE TABLE IF NOT EXISTS prices (
-            id SERIAL PRIMARY KEY,
-            symbol VARCHAR(10) NOT NULL,
-            price DECIMAL(10, 2) NOT NULL,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            username VARCHAR(50) NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            username VARCHAR(50) UNIQUE NOT NULL,
-            password VARCHAR(50) NOT NULL,
-            email VARCHAR(255),
-            minutely BOOLEAN,
-            hourly BOOLEAN,
-            daily BOOLEAN
-        );
-        CREATE TABLE IF NOT EXISTS user_config (
-            id SERIAL PRIMARY KEY,
-            username VARCHAR(50) NOT NULL,
-            config_item VARCHAR(50) NOT NULL
-        );
-        '''
-        cur.execute(create_table_query)
+        try:
+            create_prices_table = '''
+            CREATE TABLE IF NOT EXISTS prices (
+                id SERIAL PRIMARY KEY,
+                symbol VARCHAR(10) NOT NULL,
+                price DECIMAL(10, 2) NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                username VARCHAR(50) NOT NULL
+            );
+            '''
+            cur.execute(create_prices_table)
 
-        conn.commit()
-        cur.close()
-        conn.close()
+            create_users_table = '''
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                password VARCHAR(50) NOT NULL,
+                email VARCHAR(255),
+                minutely BOOLEAN,
+                hourly BOOLEAN,
+                daily BOOLEAN
+            );
+            '''
+            cur.execute(create_users_table)
 
-        print("Database setup completed.")
+            create_user_config_table = '''
+            CREATE TABLE IF NOT EXISTS user_config (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(50) NOT NULL,
+                config_item VARCHAR(50) NOT NULL
+            );
+            '''
+            cur.execute(create_user_config_table)
+
+            conn.commit()
+            print("Database setup completed.")
+        
+        except psycopg2.errors.UniqueViolation as e:
+            print("A Unique Constraint Violation occurred: ", e)
+            conn.rollback()
+        
+        finally:
+            cur.close()
+            conn.close()
+
 
 
     def add_new_price(self, symbol: str, price: float, timestamp, username: str):
