@@ -69,6 +69,7 @@ def login():
         Password: <input type="password" name="password"><br>
         <input type="submit" value="Login">
     </form>
+    <a href="/register">Register</a>
     '''
 
 
@@ -100,6 +101,7 @@ def register():
         Password: <input type="password" name="password"><br>
         <input type="submit" value="Register">
     </form>
+    <a href="/login">Already has an account.</a>
     '''
 
 
@@ -194,7 +196,10 @@ def save_config():
         cur.close()
         conn.close()
         
-        return f"Configuration saved: {', '.join(selected_items)}"
+        return f'''
+            <p>Configuration saved: {', '.join(selected_items)}</p>
+            <a href="/config">Go back</a>
+        '''
     return redirect(url_for("login"))
 
 
