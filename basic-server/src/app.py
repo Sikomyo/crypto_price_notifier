@@ -260,6 +260,8 @@ def fetch_and_update_prices():
                 INSERT INTO prices (symbol, price, timestamp, username)
                 VALUES (%s, %s, %s, %s)
             """, (symbol, crypto_price, timestamp, username))
+        else:
+            print(f"Failed to fetch price for {symbol}.")
     
     conn.commit()
     cur.close()

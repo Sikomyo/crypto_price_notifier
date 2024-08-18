@@ -4,6 +4,7 @@ import json
 import os
 import pika
 
+
 class CryptoDataCollector:
 
 
@@ -16,28 +17,30 @@ class CryptoDataCollector:
 
 
     def get_crypto_price(self, symbol: str):
-
         url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
         parameters = {
-        'symbol':symbol,
+            'symbol': symbol,
         }
         headers = {
-        'Accepts': 'application/json',
-        'X-CMC_PRO_API_KEY': '3b3e4dcc-660a-410c-8f92-8cc888391327',
+            'Accepts': 'application/json',
+            'X-CMC_PRO_API_KEY': 'your_api_key',
         }
 
-        response = requests.get(url, headers=headers, params=parameters)
-        data = response.json()
-        response = requests.get(url, headers=headers, params=parameters)
-        data = response.json()
+        try:
+            response = requests.get(url, headers=headers, params=parameters)
+            data = response.json()
 
-        if response.status_code == 200:
-            crypto_price = round(data['data'][symbol]['quote']['USD']['price'], 2)
-            timestamp = data['data'][symbol]['last_updated']
-            return crypto_price, timestamp
-        else:
-            print(f"Error {response.status_code}: {data['status']['error_message']}")
-            return None
+            if response.status_code == 200:
+                crypto_price = round(data['data'][symbol]['quote']['USD']['price'], 2)
+                timestamp = data['data'][symbol]['last_updated']
+                return crypto_price, timestamp
+            else:
+                print(f"Error {response.status_code}: {data['status']['error_message']}")
+                return None, None
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return None, None
+
 
 
     def send_to_queue(self, message):
@@ -50,7 +53,9 @@ class CryptoDataCollector:
         channel.basic_publish(exchange='', routing_key=self.rabbitmq_queue, body=json.dumps(message))
         connection.close()
     
+
     def collect_and_send(self, symbol: str):
         price, timestamp = self.get_crypto_price(symbol)
         message = {'symbol': symbol, 'price': price, 'timestamp': timestamp}
         self.send_to_queue(message)
+
