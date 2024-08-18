@@ -1,1 +1,1 @@
-web: gunicorn basic-server.src.app:app
+web: python -m basic-server.src.app
