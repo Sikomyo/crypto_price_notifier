@@ -23,7 +23,7 @@ class CryptoDataCollector:
         }
         headers = {
             'Accepts': 'application/json',
-            'X-CMC_PRO_API_KEY': 'your_api_key',
+            'X-CMC_PRO_API_KEY': '3b3e4dcc-660a-410c-8f92-8cc888391327',
         }
 
         try:
